@@ -1,0 +1,8 @@
+mas singleUAV {
+    agent uav : singleUAV.asl {
+          ag-arch: EJasonArch // architecture
+    }
+
+    platform: centralised()
+    //asl-path: src/agt, src/agt/inc
+}

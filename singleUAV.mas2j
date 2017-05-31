@@ -1,0 +1,6 @@
+MAS sUAV{
+    infrastructure: Centralised
+    agents:
+        singleUAV
+          agentArchClass EJasonArch; // architecture
+}
