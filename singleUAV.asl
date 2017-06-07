@@ -1,10 +1,10 @@
 ////////////////Beliefs
-waypoint(0,3,0,0.5).
-waypoint(1,4,-1,0.5).
-waypoint(2,2,1,0.5).
-waypoint(3,2,1,5).
-waypoint(4,0,0,0.5).
-endOfTrip(5).
+//waypoint(0,3,0,0.5).
+//waypoint(1,4,-1,0.5).
+//waypoint(2,2,1,0.5).
+//waypoint(3,2,1,5).
+//waypoint(4,0,0,0.5).
+//endOfTrip(5).
 
 !start.
 
