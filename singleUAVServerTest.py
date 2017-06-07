@@ -5,14 +5,15 @@ import time
 import select
 import re
 import math
-
 #MAVLINK RELATED IMPORTS
+from dronekit import *
 
 #SERVER
 ####constants####
 JAVAPORT = 6969
-SIMPORT = 14550 #environment simulation
+SIMPORT = '127.0.0.1:14550' #environment simulation
 min_distance = 0.1 #minimum distance to consider as change in position
+default_altitude = 50
 
 ####methods####
 def decodeSock(msg, port):
@@ -47,7 +48,7 @@ def sendTo(port, sList, msg): #sendTo(port socket to send, list of sockets, mess
             s.sendall(encodeSock(msg,port))
 
 ####variable initialization####
-localPorts = [SIMPORT, JAVAPORT]
+localPorts = [JAVAPORT]
 sockList = [] #sockets accepted
 lastTime = time.time()
 
@@ -61,6 +62,20 @@ for p in localPorts:
     sock = createSocket(p)
     clientSock, address = sock.accept()
     sockList.append(clientSock)
+
+#setup VANT
+copter = connect(SIMPORT, wait_ready=True)
+while not copter.is_armable:
+    print(" Waiting for copter to initialise...")
+    time.sleep(1)
+copter.mode = VehicleMode("GUIDED")
+copter.armed= True
+while not copter.armed:
+    print(" Waiting for arming...")
+    time.sleep(1)
+
+#initial position
+pos = [float(copter.location.global_frame.lon), float(copter.location.global_frame.lat), float(copter.location.global_frame.alt)]
 
 while True:
     #Check which sockets are readable or writable
@@ -84,34 +99,26 @@ while True:
             if receivePort == JAVAPORT: #if it was received from the Agent
                 if '!' in decodeData: #if it's and action
                     if 'launch' in decodeData:
-                        MODE GUIDED
                         print('launching')
-
+                        copter.simple_takeoff(default_altitude)
                     if 'land' in decodeData:
                         print('landing')
-
                     if 'setWaypoint' in decodeData:
                         _, x, y, z, _ = re.split('\(|\)|,', decodeData)
                         print('setting wp to (' + x +', ' + y + ', ' + z + ')')
 
-                    #send command to flight-control-board
-                    sendTo(SIMPORT,writable,encodeSock(decodeData,SIMPORT))
                     #send confirmation to the Agent
                     sendTo(JAVAPORT,writable,encodeSock(decodeData,JAVAPORT))
 
-            if receivePort == SIMPORT:#if it was received from the flight-control-board
-                if 'pos' in decodeData:
-                    _, x, y, z, _ = re.split('\(|\)|,', decodeData)
-                    #position percept filter
-                    if math.sqrt(math.pow(float(x)-pos[0],2)+
-                        math.pow(float(y)-pos[1],2)+
-                        math.pow(float(z)-pos[2],2))>min_distance:
-                        pos = [float(x),float(y),float(z)] #update position
-                if 'status' in decodeData:
-                    _, term, _ = re.split('\(|\)', decodeData)
-                    status = term #update status
+    x, y, z = float(copter.location.global_frame.lon), float(copter.location.global_frame.lat), float(copter.location.global_frame.alt)
+    if (math.sqrt(math.pow(x-pos[0],2) + math.pow(y-pos[1],2) + math.pow(z-pos[2],2)))>min_distance :
+        pos = [x,y,z] #update position
+
+    if copter.armed:
+        status = 'ready' #update status
 
     #else:
         #s.close()
         #if s in sockList:
             #sockList.remove(s)
+copter.close()
