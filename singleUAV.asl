@@ -1,10 +1,11 @@
 ////////////////Beliefs
-//waypoint(0,3,0,0.5).
-//waypoint(1,4,-1,0.5).
-//waypoint(2,2,1,0.5).
-//waypoint(3,2,1,5).
-//waypoint(4,0,0,0.5).
-//endOfTrip(5).
+//waypoint(sequence,latitude,longitude, altitute relative to ground)
+waypoint(0,-27.603683,-48.518052,10).
+waypoint(1,-27.603815,-48.518572,10).
+waypoint(2,-27.603815,-48.518572,20).
+waypoint(3,-27.6040319,-48.518365,15).
+
+endOfTrip(4).
 
 !start.
 
@@ -35,7 +36,7 @@
       !setCourse.
 
 //when wp is reached
-+!reachWP : sequenceCounter(S) & pos(X,Y,Z) & destination(Xd,Yd,Zd) & math.abs(X-Xd)<0.3 & math.abs(Y-Yd)<0.3 & math.abs(Z-Zd)<0.3
++!reachWP : sequenceCounter(S) & pos(X,Y,Z) & destination(Xd,Yd,Zd) & math.abs(X-Xd)<1 & math.abs(Y-Yd)<1 & math.abs(Z-Zd)<1
   <-  -destination(Xd,Yd,Zd);
       -+sequenceCounter(S+1);
       +idle;
