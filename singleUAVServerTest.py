@@ -13,7 +13,7 @@ from dronekit import *
 JAVAPORT = 6969
 SIMPORT = '127.0.0.1:14550' #environment simulation
 min_distance = 0.1 #minimum distance to consider as change in position
-default_altitude = 50
+min_altitude = 5
 
 ####methods####
 def decodeSock(msg, port):
@@ -75,7 +75,7 @@ while not copter.armed:
     time.sleep(1)
 
 #initial position
-pos = [float(copter.location.global_frame.lon), float(copter.location.global_frame.lat), float(copter.location.global_frame.alt)]
+#initial_pos = [float(copter.location.global_relative_frame.lon), float(copter.location.global_relative_frame.lat), float(copter.location.global_relative_frame.alt)]
 
 while True:
     #Check which sockets are readable or writable
@@ -85,7 +85,6 @@ while True:
     if(time.time()-lastTime > 1): #send percepts every second
         lastTime = time.time()
         percept = buildPercept()
-        print("SENDING PERCEPTS")
         sendTo(JAVAPORT,writable,encodeSock(percept,JAVAPORT))
 
     #Interpret received messages
@@ -100,22 +99,36 @@ while True:
                 if '!' in decodeData: #if it's and action
                     if 'launch' in decodeData:
                         print('launching')
-                        copter.simple_takeoff(default_altitude)
+                        copter.simple_takeoff(min_altitude)
                     if 'land' in decodeData:
                         print('landing')
+                        copter.mode  = VehicleMode("RTL")
                     if 'setWaypoint' in decodeData:
-                        _, x, y, z, _ = re.split('\(|\)|,', decodeData)
-                        print('setting wp to (' + x +', ' + y + ', ' + z + ')')
+                        print('setting wp')
+                        _, latwp, lonwp, altwp, _ = re.split('\(|\)|,', decodeData)
+                        #wp = LocationGlobalRelative(-30,150,20)
+                        wp = LocationGlobalRelative(float(latwp), float(lonwp), float(altwp))
+                        print(wp)
+                        print(pos)
+                        copter.simple_goto(wp)
 
                     #send confirmation to the Agent
                     sendTo(JAVAPORT,writable,encodeSock(decodeData,JAVAPORT))
 
-    x, y, z = float(copter.location.global_frame.lon), float(copter.location.global_frame.lat), float(copter.location.global_frame.alt)
-    if (math.sqrt(math.pow(x-pos[0],2) + math.pow(y-pos[1],2) + math.pow(z-pos[2],2)))>min_distance :
-        pos = [x,y,z] #update position
+    #latitude and longitude are global. Altitude is relatie to the ground
+    lat, lon, alt =  float(copter.location.global_relative_frame.lat), float(copter.location.global_relative_frame.lon), float(copter.location.global_relative_frame.alt)
+    if (math.sqrt(math.pow(lat-pos[0],2) + math.pow(lon-pos[1],2) + math.pow(alt-pos[2],2)))>min_distance :
+        pos = [lat,lon,alt] #update position
 
     if copter.armed:
-        status = 'ready' #update status
+        if float(copter.location.global_relative_frame.alt) > min_altitude*0.95 :
+            status = 'flying'
+        else:
+            status = 'ready' #update status
+    else:
+        status = 'notReady'
+
+
 
     #else:
         #s.close()
