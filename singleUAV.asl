@@ -22,10 +22,10 @@ endOfTrip(4).
   <-  !start.
 
 //set course to waypoint
-+!setCourse : sequenceCounter(S) & waypoint(S, X, Y, Z) & idle & status(flying)
++!setCourse : sequenceCounter(S) & waypoint(S, Xw, Yw, Zw) & idle & status(flying)
   <-  -idle;
-      setWaypoint(X,Y,Z);//action set waypoint
-      +destination(X,Y,Z);
+      setWaypoint(Xw,Yw,Zw);//action set waypoint
+      +destination(Xw,Yw,Zw);
       !reachWP.
 +!setCourse : sequenceCounter(S) & waypoint(S, _, _, _)
   <-  !setCourse.
@@ -36,14 +36,16 @@ endOfTrip(4).
       !setCourse.
 
 //when wp is reached
-+!reachWP : sequenceCounter(S) & pos(X,Y,Z) & destination(Xd,Yd,Zd) & math.abs(X-Xd)<1 & math.abs(Y-Yd)<1 & math.abs(Z-Zd)<1
-  <-  -destination(Xd,Yd,Zd);
++!reachWP : sequenceCounter(S) & pos(X,Y,Z) & destination(Xd,Yd,Zd) & jia.gps_dist(X,Y,Z,Xd,Yd,Zd,D) & D<6
+  <-
+      -destination(Xd,Yd,Zd);
       -+sequenceCounter(S+1);
       +idle;
       !setCourse.
 +!reachWP
   <-  .wait({+pos(_,_,_)},1000,_);
       !reachWP.
+
 //-!reachWP
 
 +!land : idle & sequenceCounter(S) & endOfTrip(S) & status(flying)

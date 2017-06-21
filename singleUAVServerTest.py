@@ -12,8 +12,9 @@ from dronekit import *
 ####constants####
 JAVAPORT = 6969
 SIMPORT = '127.0.0.1:14550' #environment simulation
-min_distance = 0.1 #minimum distance to consider as change in position
+min_distance = 0.5 #minimum distance to consider as change in position
 min_altitude = 5
+R = 6371; # Radius of the earth
 
 ####methods####
 def decodeSock(msg, port):
@@ -117,7 +118,17 @@ while True:
 
     #latitude and longitude are global. Altitude is relatie to the ground
     lat, lon, alt =  float(copter.location.global_relative_frame.lat), float(copter.location.global_relative_frame.lon), float(copter.location.global_relative_frame.alt)
-    if (math.sqrt(math.pow(lat-pos[0],2) + math.pow(lon-pos[1],2) + math.pow(alt-pos[2],2)))>min_distance :
+    latDistance = math.radians(lat-pos[0])
+    lonDistance = math.radians(lon-pos[1])
+    height = alt - pos[2]
+
+    a = math.sin(latDistance / 2) * math.sin(latDistance / 2) + math.cos(math.radians(lat)) * math.cos(math.radians(pos[0])) * math.sin(lonDistance / 2) * math.sin(lonDistance / 2)
+
+    distance = R * 1000 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    distance = math.sqrt(math.pow(distance, 2) + math.pow(height, 2));
+
+    if distance>min_distance :
         pos = [lat,lon,alt] #update position
 
     if copter.armed:
