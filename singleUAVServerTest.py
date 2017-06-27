@@ -65,7 +65,7 @@ for p in localPorts:
     sockList.append(clientSock)
 
 #setup VANT
-copter = connect(SIMPORT, wait_ready=True)
+copter = connect(SIMPORT)
 while not copter.is_armable:
     print(" Waiting for copter to initialise...")
     time.sleep(1)
