@@ -5,7 +5,7 @@ waypoint(1,-27.603815,-48.518572,10).
 waypoint(2,-27.603815,-48.518572,20).
 waypoint(3,-27.6040319,-48.518365,15).
 
-endOfTrip(4).
+end_of_trip(4).
 
 !start.
 
@@ -15,40 +15,40 @@ endOfTrip(4).
 //wait for a confirmation if all is set up
 +!start : status(ready)
   <-  launch; //launch drone
-      +sequenceCounter(0);
+      +sequence_counter(0);
       +idle;
-      !setCourse.
+      !set_course.
 +!start
   <-  !start.
 
 //set course to waypoint
-+!setCourse : sequenceCounter(S) & waypoint(S, Xw, Yw, Zw) & idle & status(flying)
++!set_course : sequence_counter(S) & waypoint(S, Xw, Yw, Zw) & idle & status(flying)
   <-  -idle;
       setWaypoint(Xw,Yw,Zw);//action set waypoint
       +destination(Xw,Yw,Zw);
-      !reachWP.
-+!setCourse : sequenceCounter(S) & waypoint(S, _, _, _)
-  <-  !setCourse.
-+!setCourse : endOfTrip(S) & sequenceCounter(S)
+      !reach_wp.
++!set_course : sequence_counter(S) & waypoint(S, _, _, _)
+  <-  !set_course.
++!set_course : end_of_trip(S) & sequence_counter(S)
   <-  !land.
-+!setCourse
-  <-  .wait({+sequenceCounter(_)},1000,_);
-      !setCourse.
++!set_course
+  <-  .wait({+sequence_counter(_)},1000,_);
+      !set_course.
 
 //when wp is reached
-+!reachWP : sequenceCounter(S) & pos(X,Y,Z) & destination(Xd,Yd,Zd) & jia.gps_dist(X,Y,Z,Xd,Yd,Zd,D) & D<6
++!reach_wp : sequence_counter(S) & pos(X,Y,Z) & destination(Xd,Yd,Zd) & jia.gps_dist(X,Y,Z,Xd,Yd,Zd,D) & D<6
   <-
       -destination(Xd,Yd,Zd);
-      -+sequenceCounter(S+1);
+      -+sequence_counter(S+1);
       +idle;
-      !setCourse.
-+!reachWP
+      !set_course.
++!reach_wp
   <-  .wait({+pos(_,_,_)},1000,_);
-      !reachWP.
+      !reach_wp.
 
-//-!reachWP
+//-!reach_wp
 
-+!land : idle & sequenceCounter(S) & endOfTrip(S) & status(flying)
++!land : idle & sequence_counter(S) & end_of_trip(S) & status(flying)
   <-  -idle;
       .print("LANDING");
       land. //land drone
