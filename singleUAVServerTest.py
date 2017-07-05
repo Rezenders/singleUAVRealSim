@@ -138,11 +138,10 @@ while True:
             status = 'ready' #update status
     else:
         status = 'notReady'
-
-
-
     #else:
         #s.close()
         #if s in sockList:
             #sockList.remove(s)
+
+    time.sleep(0.02)
 copter.close()
