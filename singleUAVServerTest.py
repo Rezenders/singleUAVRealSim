@@ -11,7 +11,13 @@ from dronekit import *
 #SERVER
 ####constants####
 JAVAPORT = 6969
-SIMPORT = '127.0.0.1:14550' #environment simulation
+#POSSIBLE DRONEPORTS:
+## '127.0.0.1:14550' #environment simulation PC-PC
+## '192.168.7.2:14550' #environment simulation Beagle-PC
+## '/dev/ttyACM0' #real application via USB Beagle-PixHawk
+## '/dev/ttyO4' #real application via serial Beagle-PixHawk.
+### Requires baud-rate 57600
+DRONEPORT = '127.0.0.1:14550' #environment simulation
 min_distance = 0.5 #minimum distance to consider as change in position
 min_altitude = 5
 R = 6371; # Radius of the earth
@@ -20,7 +26,7 @@ R = 6371; # Radius of the earth
 def decodeSock(msg, port):
     if port == JAVAPORT:
         return msg[:-1] #JAVAPORT]
-    if port == SIMPORT:
+    if port == DRONEPORT:
         return re.split('\)',msg)[-2]+')' #get only the last term
     else: return msg
 
@@ -65,15 +71,12 @@ for p in localPorts:
     sockList.append(clientSock)
 
 #setup VANT
-copter = connect(SIMPORT)
-while not copter.is_armable:
-    print(" Waiting for copter to initialise...")
-    time.sleep(1)
+copter = connect(DRONEPORT, wait_ready=True) #if ttyO4, set baud=57600
 copter.mode = VehicleMode("GUIDED")
-copter.armed= True
 while not copter.armed:
+    copter.armed= True
     print(" Waiting for arming...")
-    time.sleep(1)
+    time.sleep(5)
 
 #initial position
 #initial_pos = [float(copter.location.global_relative_frame.lon), float(copter.location.global_relative_frame.lat), float(copter.location.global_relative_frame.alt)]
