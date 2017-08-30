@@ -13,8 +13,9 @@ end_of_trip(4).
 ////////////////Plans
 
 //wait for a confirmation if all is set up
-+!start : status(ready)
-  <-  launch; //launch drone
++!start : status(ready) & .my_name(N)
+  <-  .send(alice,tell,iam(N));
+      launch; //launch drone
       +sequence_counter(0);
       +idle;
       !set_course.
