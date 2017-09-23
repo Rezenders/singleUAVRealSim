@@ -5,7 +5,7 @@ import jason.asSyntax.*;
 import jason.infra.centralised.BaseCentralisedMAS;
 import java.util.*;
 import java.util.concurrent.*;
-
+import java.util.logging.*;
 /**
  * Example of an agent that only uses Jason BDI engine. It runs without all
  * Jason IDE stuff. (see Jason FAQ for more information about this example)
@@ -17,9 +17,9 @@ public class EJasonArch extends AgArch {
   private static final String actionID = "!";
   private static final String perceptID = "";
   private static final String failID = "@";
-  private static final String messageID = "*"
+  private static final String messageID = "*";
   //*********************************************************
-
+  private static Logger logger = Logger.getLogger(EJasonArch.class.getSimpleName());
 
   //JasonBulb makes the interface between the Agent and the rest of the system
   private JasonBulb bulb = new JasonBulb(this);
@@ -36,16 +36,17 @@ public class EJasonArch extends AgArch {
     bulbThread.setDaemon(true);
     bulbThread.start();
 
-    try{
-      Thread.sleep(200);//wait a bit for bulb to start up
-    }catch(Exception e){e.printStackTrace();}
-
+    while(!bulb.isReady()){
+      try{
+          Thread.sleep(20);//wait a bit for bulb to start up
+      }catch(Exception e){e.printStackTrace();}
+    }
   }
-    // this method just add some perception for the agent
 
+    // this method just add some perception for the agent
   @Override
-  public List<Literal> perceive() {
-      List<Literal> p = new ArrayList<Literal>();//super.perceive();
+  public Collection<Literal> perceive() {
+      Collection<Literal> p = new ArrayList<Literal>();//super.perceive();
       p.addAll(this.worldState);
       //p.addAll();
       //bulb.bulbSend(this.heartbeat);//request new percepts
@@ -69,11 +70,11 @@ public class EJasonArch extends AgArch {
   @Override
   public void checkMail() {
     Circumstance C = getTS().getC();
-    Message im = mailBox.remove(0); // pega a msgs da tua conexao
-    while (im != null) {
+    Message im = new Message(); // pega a msgs da tua conexao
+    while (!this.mailBox.isEmpty()) {
+      im = this.mailBox.remove(0); // pega  aprox. msgs da tua conexao
       C.addMsg(im);
       if (logger.isLoggable(Level.FINE)) logger.fine("received message: " + im);
-      im = mailBox.remove(0); // pega  aprox. msgs da tua conexao
     }
   }
 
@@ -86,7 +87,11 @@ public class EJasonArch extends AgArch {
   }
 
   public void addToMailBox(String strMsg){
-    this.mailBox.add(Message.parseMsg(strMsg));
+    try{
+      this.mailBox.add(Message.parseMsg(strMsg));
+    } catch(Exception e){
+      e.printStackTrace();
+    }
   }
 
   public void addPercepts(List<Literal> newState){

@@ -2,10 +2,10 @@
 //waypoint(sequence,latitude,longitude, altitute relative to ground)
 waypoint(0,-27.603683,-48.518052,10).
 waypoint(1,-27.603815,-48.518572,10).
-waypoint(2,-27.603815,-48.518572,20).
-waypoint(3,-27.6040319,-48.518365,15).
+//waypoint(2,-27.603815,-48.518572,20).
+//waypoint(3,-27.6040319,-48.518365,15).
 
-end_of_trip(4).
+//end_of_trip(4).
 
 !start.
 
@@ -13,7 +13,7 @@ end_of_trip(4).
 ////////////////Plans
 
 //wait for a confirmation if all is set up
-+!start : status(ready)
++!start : status(ready) & .my_name(N)
   <-  launch; //launch drone
       +sequence_counter(0);
       +idle;

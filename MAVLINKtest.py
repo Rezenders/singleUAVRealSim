@@ -11,22 +11,16 @@ from dronekit import *
 #SERVER
 ####constants####
 JAVAPORT = 6969
-#POSSIBLE DRONEPORTS:
-## '127.0.0.1:14550' #environment simulation PC-PC
-## '192.168.7.2:14550' #environment simulation Beagle-PC
-## '/dev/ttyACM0' #real application via USB Beagle-PixHawk
-## '/dev/ttyO4' #real application via serial Beagle-PixHawk.
-### Requires baud-rate 57600
-DRONEPORT = '127.0.0.1:14550' #environment simulation
+SIMPORT = '127.0.0.1:14550' #environment simulation
 min_distance = 0.5 #minimum distance to consider as change in position
-min_altitude = 7
-R = 6371 # Radius of the earth
+min_altitude = 5
+R = 6371; # Radius of the earth
 
 ####methods####
 def decodeSock(msg, port):
     if port == JAVAPORT:
         return msg[:-1] #JAVAPORT]
-    if port == DRONEPORT:
+    if port == SIMPORT:
         return re.split('\)',msg)[-2]+')' #get only the last term
     else: return msg
 
@@ -65,59 +59,61 @@ status = 'notReady'
 
 ####Application####
 #Connect to all sub-systems (sockets) before anything
-for p in localPorts:
-    sock = createSocket(p)
-    clientSock, address = sock.accept()
-    sockList.append(clientSock)
+#for p in localPorts:
+#    sock = createSocket(p)
+#    clientSock, address = sock.accept()
+#    sockList.append(clientSock)
 
 #setup VANT
-copter = connect(DRONEPORT, wait_ready=True) #if ttyO4, set baud=57600
+copter = connect(SIMPORT)
+while not copter.is_armable:
+    print(" Waiting for copter to initialise...")
+    time.sleep(1)
 copter.mode = VehicleMode("GUIDED")
+copter.armed= True
 while not copter.armed:
-    copter.armed= True
     print(" Waiting for arming...")
-    time.sleep(5)
+    time.sleep(1)
 
 #initial position
 #initial_pos = [float(copter.location.global_relative_frame.lon), float(copter.location.global_relative_frame.lat), float(copter.location.global_relative_frame.alt)]
 
 while True:
     #Check which sockets are readable or writable
-    readable, writable, exceptional = select.select(sockList, sockList, sockList, 0.1)
+#    readable, writable, exceptional = select.select(sockList, sockList, sockList, 0.1)
 
     #percepts update
-    if(time.time()-lastTime > 1): #send percepts every second
-        lastTime = time.time()
-        percept = buildPercept()
-        sendTo(JAVAPORT,writable,encodeSock(percept,JAVAPORT))
+#    if(time.time()-lastTime > 1): #send percepts every second
+#        lastTime = time.time()
+#        percept = buildPercept()
+#        sendTo(JAVAPORT,writable,encodeSock(percept,JAVAPORT))
 
     #Interpret received messages
-    for s in readable: #for every socket object
-        _, receivePort = s.getsockname(); #receivePort = port_number
+#    for s in readable: #for every socket object
+#        _, receivePort = s.getsockname(); #receivePort = port_number
 
-        data = s.recv(1024)
-        if data != '': #if it's not a null message
-            decodeData = decodeSock(data, receivePort)
+#        data = s.recv(1024)
+#        if data != '': #if it's not a null message
+#            decodeData = decodeSock(data, receivePort)
 
-            if receivePort == JAVAPORT: #if it was received from the Agent
-                if '!' in decodeData: #if it's and action
-                    if 'launch' in decodeData:
-                        print('launching')
-                        copter.simple_takeoff(min_altitude)
-                    if 'land' in decodeData:
-                        print('landing')
-                        copter.mode  = VehicleMode("RTL")
-                    if 'setWaypoint' in decodeData:
-                        print('setting wp')
-                        _, latwp, lonwp, altwp, _ = re.split('\(|\)|,', decodeData)
-                        #wp = LocationGlobalRelative(-30,150,20)
-                        wp = LocationGlobalRelative(float(latwp), float(lonwp), float(altwp))
-                        print(wp)
-                        print(pos)
-                        copter.simple_goto(wp)
+#            if receivePort == JAVAPORT: #if it was received from the Agent
+##                    if 'launch' in decodeData:
+#                        print('launching')
+#                        copter.simple_takeoff(min_altitude)
+#                    if 'land' in decodeData:
+#                        print('landing')
+#                        copter.mode  = VehicleMode("RTL")
+#                    if 'setWaypoint' in decodeData:
+#                        print('setting wp')
+#                        _, latwp, lonwp, altwp, _ = re.split('\(|\)|,', decodeData)
+#                        #wp = LocationGlobalRelative(-30,150,20)
+#                        wp = LocationGlobalRelative(float(latwp), float(lonwp), float(altwp))
+#                        print(wp)
+#                        print(pos)
+#                        copter.simple_goto(wp)
 
                     #send confirmation to the Agent
-                    sendTo(JAVAPORT,writable,encodeSock(decodeData,JAVAPORT))
+#                    sendTo(JAVAPORT,writable,encodeSock(decodeData,JAVAPORT))
 
     #latitude and longitude are global. Altitude is relatie to the ground
     lat, lon, alt =  float(copter.location.global_relative_frame.lat), float(copter.location.global_relative_frame.lon), float(copter.location.global_relative_frame.alt)

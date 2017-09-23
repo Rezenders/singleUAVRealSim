@@ -5,34 +5,37 @@ import time
 import select
 import re
 import math
+from ESP import ESP
 #MAVLINK RELATED IMPORTS
 from dronekit import *
 
 #SERVER
 ####constants####
 JAVAPORT = 6969
+DRONEPORT = '127.0.0.1:14550' #environment simulation
 #POSSIBLE DRONEPORTS:
 ## '127.0.0.1:14550' #environment simulation PC-PC
 ## '192.168.7.2:14550' #environment simulation Beagle-PC
 ## '/dev/ttyACM0' #real application via USB Beagle-PixHawk
 ## '/dev/ttyO4' #real application via serial Beagle-PixHawk.
 ### Requires baud-rate 57600
-DRONEPORT = '127.0.0.1:14550' #environment simulation
-min_distance = 0.5 #minimum distance to consider as change in position
-min_altitude = 7
-R = 6371 # Radius of the earth
+ESPPORT = '/dev/ttyUSB0'
+
+MIN_DISTANCE = 0.5 #minimum distance to consider as change in position
+MIN_ALT = 5
+R = 6371; # Radius of the earth
 
 ####methods####
 def decodeSock(msg, port):
     if port == JAVAPORT:
-        return msg[:-1] #JAVAPORT]
+        return msg[:-1]
     if port == DRONEPORT:
         return re.split('\)',msg)[-2]+')' #get only the last term
     else: return msg
 
 def encodeSock(msg, port):
     if port == JAVAPORT:
-        return msg + '\n' #JAVAPORT
+        return msg + '\n'
     else: return msg
 
 def createSocket(TCP_PORT):
@@ -45,8 +48,8 @@ def createSocket(TCP_PORT):
     return serverSocket
 
 def buildPercept():
-    percept = 'pos(' + str(pos[0]) + ',' + str(pos[1]) + ',' + str(pos[2]) + ');' + \
-                'status(' + status + ')'
+    percept = 'pos('+str(pos[0])+ ',' +str(pos[1])+ ',' +str(pos[2])+');' + \
+                'status('+status+');'
     return percept
 
 def sendTo(port, sList, msg): #sendTo(port socket to send, list of sockets, message)
@@ -58,12 +61,18 @@ def sendTo(port, sList, msg): #sendTo(port socket to send, list of sockets, mess
 localPorts = [JAVAPORT]
 sockList = [] #sockets accepted
 lastTime = time.time()
+ag_name = ''
+newConnection = ''
+espConnections = {}
 
 ####System state variables####
 pos = [0, 0, 0]
 status = 'notReady'
 
 ####Application####
+#setup ESP
+#esp = ESP(ESPPORT)
+
 #Connect to all sub-systems (sockets) before anything
 for p in localPorts:
     sock = createSocket(p)
@@ -103,10 +112,12 @@ while True:
                 if '!' in decodeData: #if it's and action
                     if 'launch' in decodeData:
                         print('launching')
-                        copter.simple_takeoff(min_altitude)
+                        copter.simple_takeoff(MIN_ALT)
+
                     if 'land' in decodeData:
                         print('landing')
                         copter.mode  = VehicleMode("RTL")
+
                     if 'setWaypoint' in decodeData:
                         print('setting wp')
                         _, latwp, lonwp, altwp, _ = re.split('\(|\)|,', decodeData)
@@ -115,11 +126,22 @@ while True:
                         print(wp)
                         print(pos)
                         copter.simple_goto(wp)
+                if '*' in decodeData:
+                    print('sending msg')
+                    print(decodeData)
+                    #destination = re.split('\[|\]|,', decodeData)[1]
+                    #message = decodeData(len('send(['+destination+'], '))[:-1]
+                    #esp.send(destination+';'+message)
+
+                    #if 'register_name' in decodeData:
+                    #    _, name, _, = re.split('\(|\)|,', decodeData)
+                    #    ag_name = name
+                    #    print('this agent\'s name is: ' + ag_name)
 
                     #send confirmation to the Agent
-                    sendTo(JAVAPORT,writable,encodeSock(decodeData,JAVAPORT))
+                    #sendTo(JAVAPORT,writable,encodeSock(decodeData,JAVAPORT))
 
-    #latitude and longitude are global. Altitude is relatie to the ground
+    #latitude and longitude are global. Altitude is relative to the ground
     lat, lon, alt =  float(copter.location.global_relative_frame.lat), float(copter.location.global_relative_frame.lon), float(copter.location.global_relative_frame.alt)
     latDistance = math.radians(lat-pos[0])
     lonDistance = math.radians(lon-pos[1])
@@ -131,16 +153,29 @@ while True:
 
     distance = math.sqrt(math.pow(distance, 2) + math.pow(height, 2));
 
-    if distance>min_distance :
+    if distance>MIN_DISTANCE :
         pos = [lat,lon,alt] #update position
 
     if copter.armed:
-        if float(copter.location.global_relative_frame.alt) > min_altitude*0.95 :
+        if float(copter.location.global_relative_frame.alt) > MIN_ALT*0.95 :
             status = 'flying'
         else:
             status = 'ready' #update status
     else:
         status = 'notReady'
+
+    #serial messages
+    #mail = esp.read()
+
+    #if 'connected:' in mail:
+    #     connectionID, _, connectionName = re.split(':|;',mail)
+    #     espConnections.update({connectionID : connectionName})
+    #
+    # else:
+    #     newConnection = ''
+    #     mail = mail[mail.find(';')+1 :]
+    #     sendTo(JAVAPORT,writable,encodeSock(mail))
+
     #else:
         #s.close()
         #if s in sockList:

@@ -3,6 +3,6 @@ mas singleUAV {
           ag-arch: EJasonArch // architecture
     }
 
-    platform: centralised()
+    //platform: centralised()
     //asl-path: src/agt, src/agt/inc
 }
