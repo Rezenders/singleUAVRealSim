@@ -19,8 +19,8 @@ JAVAPORT = 6969
 ### Requires baud-rate 57600
 DRONEPORT = '127.0.0.1:14550' #environment simulation
 min_distance = 0.5 #minimum distance to consider as change in position
-min_altitude = 5
-R = 6371; # Radius of the earth
+min_altitude = 7
+R = 6371 # Radius of the earth
 
 ####methods####
 def decodeSock(msg, port):
