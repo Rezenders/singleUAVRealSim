@@ -8,13 +8,13 @@ waypoint(1,-27.603815,-48.518572,10).
 //end_of_trip(4).
 
 !start.
-
+//!commTest.
 
 ////////////////Plans
 
 //wait for a confirmation if all is set up
-+!start : status(ready) & .my_name(N)
-  <-  launch; //launch drone
++!start : status(ready)
+  <-  ext::launch; //launch drone
       +sequence_counter(0);
       +idle;
       !set_course.
@@ -24,7 +24,7 @@ waypoint(1,-27.603815,-48.518572,10).
 //set course to waypoint
 +!set_course : sequence_counter(S) & waypoint(S, Xw, Yw, Zw) & idle & status(flying)
   <-  -idle;
-      setWaypoint(Xw,Yw,Zw);//action set waypoint
+      ext::setWaypoint(Xw,Yw,Zw);//action set waypoint
       +destination(Xw,Yw,Zw);
       !reach_wp.
 +!set_course : sequence_counter(S) & waypoint(S, _, _, _)
@@ -51,9 +51,21 @@ waypoint(1,-27.603815,-48.518572,10).
 +!land : idle & sequence_counter(S) & end_of_trip(S) & status(flying)
   <-  -idle;
       .print("LANDING");
-      land. //land drone
+      ext::land. //land drone
 +!land
   <-  !land.
 
 +pos(X,Y,Z)
   <- .print("pos(", X, ", ", Y, ", ", Z, ")").
+
++!commTest : connected(D) & .my_name(N)
+  <- .send(D,tell,iam(N));
+     .wait({+sequence_counter(_)},5000,_);
+     !commTest.
+
++!commTest
+  <- .wait({+sequence_counter(_)},1000,_);
+     !commTest.
+
++understood(M)
+  <- .print("understood ", M).
