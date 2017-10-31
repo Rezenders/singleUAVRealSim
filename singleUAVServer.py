@@ -22,7 +22,7 @@ DRONEPORT = '127.0.0.1:14550' #environment simulation
 ESPPORT = '/dev/ttyUSB0'
 
 MIN_DISTANCE = 0.5 #minimum distance to consider as change in position
-MIN_ALT = 5
+MIN_ALT = 10
 R = 6371; # Radius of the earth
 
 ####methods####
@@ -110,6 +110,7 @@ while True:
 
             if receivePort == JAVAPORT: #if it was received from the Agent
                 if '!' in decodeData: #if it's and action
+                    print(decodeData)
                     if 'launch' in decodeData:
                         print('launching')
                         copter.simple_takeoff(MIN_ALT)
@@ -126,6 +127,9 @@ while True:
                         print(wp)
                         print(pos)
                         copter.simple_goto(wp)
+
+                    sendTo(JAVAPORT,writable,encodeSock(decodeData,JAVAPORT))
+
                 if '*' in decodeData:
                     print('sending msg')
                     print(decodeData)
